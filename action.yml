@@ -1,5 +1,9 @@
 name: 'Python Flatpak Sources Generator'
 description: 'Check out an existing flatpak repository of a python app and update its sources'
+branding:
+  icon: 'refresh-cw'
+  color: 'red'
+
 inputs:
   flatpak-repo:
     description: 'The remote repository with the manifest'
