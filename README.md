@@ -16,6 +16,23 @@ Finally:
 The last step is to commit these changes, which is something this action does not cover,
 but should be trivial.
 
+## Usage
+```yaml
+- uses: jacobszpz/python-flatpak-generator-action@v1
+  env:
+    MATURIN_REF: v1.2.3
+    SETUPTOOLS_RUST_REF: v1.7.0
+  with:
+    flatpak-repo: 'user/flathub'
+    flatpak-repo-branch: 'yourbranch'
+    flatpak-repo-secret: ${{ secrets.YOUR_SECRET }}
+    use-pipfile: false
+    python-version: '3.10.10'
+    maturin-version: ${{ env.MATURIN_REF }}
+    setuptools-rust-version: ${{ env.SETUPTOOLS_RUST_REF }}
+```
+By default, maturin-version / setuptools-rust-version will not take effect unless you specify them.
+
 ## Why?
 ~~I dunno~~
 
