@@ -1,5 +1,5 @@
 name: 'Python Flatpak Sources Generator'
-description: 'Update sources based on requirements.txt or Pipfile'
+description: 'Check out an existing flatpak repository of a python app and update its sources'
 inputs:
   flatpak-repo:
     description: 'The remote repository with the manifest'
@@ -8,7 +8,7 @@ inputs:
     description: 'The branch of the manifest repo'
     required: true
   flatpak-repo-secret:
-    description: 'The secret to push to the manifest repo'
+    description: 'The secret to pull from the manifest repo'
     required: true
   use-pipfile:
     description: 'Create a requirements.txt file using pipenv requirements'
