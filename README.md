@@ -7,10 +7,12 @@ A really niche action that will:
 3. Run flatpak-pip-generator on the current repository's requirements.txt (or Pipfile)
 
 Additionally:
+
 4. If detected, run flatpak-cargo-generator on pydantic-core
 5. If desired, run flatpak-cargo-generator on maturin (version provided)
 
 Finally:
+
 6. Place the generated files on the flatpak manifest repository locally
 
 The last step is to commit these changes, which is something this action does not cover,
