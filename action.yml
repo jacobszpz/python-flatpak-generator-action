@@ -1,0 +1,107 @@
+name: 'Python Flatpak Sources Generator'
+description: 'Update sources based on requirements.txt or Pipfile'
+inputs:
+  flatpak-repo:
+    description: 'The remote repository with the manifest'
+    required: true
+  flatpak-repo-branch:
+    description: 'The branch of the manifest repo'
+    required: true
+  flatpak-repo-secret:
+    description: 'The secret to push to the manifest repo'
+    required: true
+  use-pipfile:
+    description: 'Create a requirements.txt file using pipenv requirements'
+    required: false
+    default: false
+  python-version:
+    description: 'Which python version to use'
+    required: false
+    default: '3.10.10'
+  maturin-version:
+    description: 'What version of maturin to use (leave empty if none)'
+    required: false
+    default: ''
+  setuptools-rust-version:
+    description: 'Version of setuptools rust to use (leave empty for none)'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
+      shell: bash
+    - name: Clone flathub dist branch
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.flatpak-repo }}
+        ref: ${{ inputs.flatpak-repo-branch }}
+        path: flathub
+        token: ${{ inputs.flatpak-repo-secret }}
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+    - run: python -m pip install --upgrade pip
+      shell: bash
+    - run: pip install pipenv requirements-parser aiohttp toml pyyaml
+      shell: bash
+    - name: Obtain flatpak builder tools
+      uses: actions/checkout@v4
+      with:
+        repository: 'flatpak/flatpak-builder-tools'
+        sparse-checkout: |
+          pip/flatpak-pip-generator
+          cargo/flatpak-cargo-generator.py
+        path: tools
+        ref: '30db60f6a086ed0457b774cc0dc7fa11b9045fcf'
+        sparse-checkout-cone-mode: false
+    - run: echo "${{ github.workspace }}/tools/pip" >> $GITHUB_PATH
+      shell: bash
+    - run: echo "${{ github.workspace }}/tools/cargo" >> $GITHUB_PATH
+      shell: bash
+    - if: ${{ inputs.use-pipfile }}
+      run: pipenv requirements > requirements.txt 
+      shell: bash
+    - id: pydantic-core
+      run: echo "PYDANTIC_CORE_REF=$(get-package-version.sh pydantic-core)" >> $GITHUB_ENV
+      shell: bash
+    - run: remove-problematic-requirements.sh
+      shell: bash
+    - run: flatpak-pip-generator -r requirements.txt
+      shell: bash
+    - if: ${{ env.PYDANTIC_CORE_REF }}
+      uses: actions/checkout@v4
+      with:
+        repository: 'pydantic/pydantic-core'
+        ref: ${{ env.PYDANTIC_CORE_REF }}
+        path: pydantic-core-tmp
+        sparse-checkout: |
+          Cargo.lock
+        sparse-checkout-cone-mode: false
+    - if: ${{ inputs.maturin-version }}
+      uses: actions/checkout@v4
+      with:
+        repository: 'PyO3/maturin'
+        ref: ${{ inputs.maturin-version }}
+        path: python-maturin-tmp
+        sparse-checkout: |
+          Cargo.lock
+        sparse-checkout-cone-mode: false
+        clean: false
+    - if: ${{ inputs.setuptools-rust-version }}
+      run: flatpak-pip-generator setuptools-rust==${{ inputs.setuptools-rust-version }}
+      shell: bash
+    - if: ${{ env.PYDANTIC_CORE_REF }}
+      run: generate-cargo-sources.sh pydantic-core
+      shell: bash
+    - if: ${{ inputs.maturin-version }}
+      run: generate-cargo-sources.sh python-maturin
+      shell: bash
+    - if: ${{ hashFiles('*-generated-sources.json') }}
+      run: mv *-generated-sources.json flathub
+      shell: bash
+    - if: ${{ hashFiles('python3-*.json') }}
+      run: mv python3-*.json flathub
+      shell: bash
