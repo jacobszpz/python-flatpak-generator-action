@@ -66,7 +66,7 @@ runs:
     - run: echo "${{ github.workspace }}/tools/cargo" >> $GITHUB_PATH
       shell: bash
     - if: ${{ inputs.use-pipfile }}
-      run: pipenv requirements > requirements.txt 
+      run: pipenv requirements > requirements.txt
       shell: bash
     - id: pydantic-core
       run: echo "PYDANTIC_CORE_REF=$(get-package-version.sh pydantic-core)" >> $GITHUB_ENV
