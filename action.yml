@@ -83,6 +83,7 @@ runs:
     - name: Delete temporary requirements
       if: ${{ fromJSON(inputs.use-pipfile) }}
       run: rm requirements.txt
+      shell: bash
 
     - name: Generate real requirements from Pipfile
       if: ${{ fromJSON(inputs.use-pipfile) }}
