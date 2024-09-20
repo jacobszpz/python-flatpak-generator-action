@@ -30,6 +30,10 @@ inputs:
     description: 'Version of setuptools rust to use (leave empty for none)'
     required: false
     default: ''
+  from-pipfile:
+    description: 'Only include dependencies from Pipfile'
+    default: true
+    type: boolean
 
 runs:
   using: "composite"
@@ -65,8 +69,10 @@ runs:
       shell: bash
     - run: echo "${{ github.workspace }}/tools/cargo" >> $GITHUB_PATH
       shell: bash
-    - if: ${{ inputs.use-pipfile }}
-      run: pipenv requirements > requirements.txt
+    - if: ${{ fromJSON(inputs.use-pipfile) }}
+      env:
+        ARG_PIPFILE: ${{ fromJSON(inputs.from-pipfile) && '--from-pipfile' || '' }}
+      run: pipenv requirements $ARG_PIPFILE > requirements.txt
       shell: bash
     - id: pydantic-core
       run: echo "PYDANTIC_CORE_REF=$(get-package-version.sh pydantic-core)" >> $GITHUB_ENV

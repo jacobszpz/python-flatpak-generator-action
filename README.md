@@ -28,7 +28,8 @@ but should be trivial.
     flatpak-repo: 'user/flathub'
     flatpak-repo-branch: 'yourbranch'
     flatpak-repo-secret: ${{ secrets.YOUR_SECRET }}
-    use-pipfile: false
+    use-pipfile: true
+    from-pipfile: true
     python-version: '3.10.10'
     maturin-version: ${{ env.MATURIN_REF }}
     setuptools-rust-version: ${{ env.SETUPTOOLS_RUST_REF }}
