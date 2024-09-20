@@ -69,19 +69,38 @@ runs:
       shell: bash
     - run: echo "${{ github.workspace }}/tools/cargo" >> $GITHUB_PATH
       shell: bash
-    - if: ${{ fromJSON(inputs.use-pipfile) }}
+
+    - name: Generate requirements from Pipfile
+      if: ${{ fromJSON(inputs.use-pipfile) }}
+      run: pipenv requirements > requirements.txt
+      shell: bash
+
+    - name: Grab pydantic-core version
+      id: pydantic-core
+      run: echo "PYDANTIC_CORE_REF=$(get-package-version.sh pydantic-core)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Delete temporary requirements
+      if: ${{ fromJSON(inputs.use-pipfile) }}
+      run: rm requirements.txt
+
+    - name: Generate real requirements from Pipfile
+      if: ${{ fromJSON(inputs.use-pipfile) }}
       env:
         ARG_PIPFILE: ${{ fromJSON(inputs.from-pipfile) && '--from-pipfile' || '' }}
       run: pipenv requirements $ARG_PIPFILE > requirements.txt
       shell: bash
-    - id: pydantic-core
-      run: echo "PYDANTIC_CORE_REF=$(get-package-version.sh pydantic-core)" >> $GITHUB_ENV
+
+    - name: Remove complex requirements
+      run: remove-problematic-requirements.sh
       shell: bash
-    - run: remove-problematic-requirements.sh
+
+    - name: Generate flatpak sources from requirements
+      run: flatpak-pip-generator -r requirements.txt
       shell: bash
-    - run: flatpak-pip-generator -r requirements.txt
-      shell: bash
-    - if: ${{ env.PYDANTIC_CORE_REF }}
+
+    - name: Clone pydantic core
+      if: ${{ env.PYDANTIC_CORE_REF }}
       uses: actions/checkout@v4
       with:
         repository: 'pydantic/pydantic-core'
@@ -90,7 +109,9 @@ runs:
         sparse-checkout: |
           Cargo.lock
         sparse-checkout-cone-mode: false
-    - if: ${{ inputs.maturin-version }}
+
+    - name: Clone maturin
+      if: ${{ inputs.maturin-version }}
       uses: actions/checkout@v4
       with:
         repository: 'PyO3/maturin'
@@ -100,6 +121,7 @@ runs:
           Cargo.lock
         sparse-checkout-cone-mode: false
         clean: false
+
     - if: ${{ inputs.setuptools-rust-version }}
       run: flatpak-pip-generator setuptools-rust==${{ inputs.setuptools-rust-version }}
       shell: bash
